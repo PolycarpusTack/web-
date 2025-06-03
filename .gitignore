@@ -1,0 +1,325 @@
+# Web+ Project .gitignore
+
+# Python / Backend
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.python-version
+
+# PyCharm
+.idea/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Node.js / Frontend
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+.npm
+.yarn-integrity
+
+# Frontend build outputs
+/apps/frontend/dist
+/apps/frontend/build
+/apps/frontend/.next
+/apps/frontend/out
+/apps/frontend/.cache
+/apps/frontend/.parcel-cache
+/apps/frontend/dist-ssr
+/apps/frontend/*.local
+
+# Frontend testing
+/apps/frontend/coverage
+/apps/frontend/.nyc_output
+/apps/frontend/test-results/
+/apps/frontend/playwright-report/
+/apps/frontend/playwright/.cache/
+/apps/frontend/test-results.xml
+/apps/frontend/junit.xml
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+web_plus.db
+web_plus.db-shm
+web_plus.db-wal
+
+# Logs
+logs/
+*.log
+*.log.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+.history/
+*.vsix
+
+# IDE - IntelliJ/WebStorm
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# IDE - Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+.tmp/
+tmp/
+temp/
+
+# Upload directories
+uploads/
+/apps/backend/uploads/
+/apps/frontend/public/uploads/
+
+# Cache directories
+.cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.pyc
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.eggs/
+*.whl
+
+# Documentation build
+docs/_build/
+docs/.doctrees/
+site/
+
+# Security - Never commit these!
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+secrets/
+.secrets/
+credentials/
+.credentials/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Backup files
+*.backup
+*.bak
+*.old
+backup/
+backups/
+
+# Test outputs
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff (if used):
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Flask stuff (if used):
+instance/
+.webassets-cache
+
+# Scrapy stuff (if used):
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# Custom project specific
+/data/
+/apps/backend/data/
+/apps/backend/ci_results/
+/apps/backend/monitoring_results/
+/apps/backend/performance_results/
+/apps/backend/test_reports/
+*.zip
+*.tar.gz
+*.rar
+
+# Lock files (keep package-lock.json for npm)
+yarn.lock
+pnpm-lock.yaml
+
+# Misc
+.env.*.local
+.history
+.vscode-test
+
+# Local development
+local/
+.local/
+
+# Generated files
+generated/
+.generated/
+
+# Temporary test files
+test_*.db
+test_*.sqlite
+*.test.db
+*.test.sqlite
+
+# Redis dump
+dump.rdb
+
+# Error screenshots
+error-screenshots/
+
+# Performance profiling
+*.prof
+*.pstats
+
+# Type stubs
+typings/
+
+# Package manager directories
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions

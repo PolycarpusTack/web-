@@ -1,0 +1,784 @@
+openapi: 3.0.3
+info:
+  title: Web+ API
+  description: |
+    Web+ is a comprehensive platform for managing and interacting with large language models.
+    This API provides endpoints for authentication, model management, chat completions,
+    file handling, and pipeline automation.
+  version: 0.2.0
+  contact:
+    name: Web+ Support
+    email: support@webplus.ai
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8002/api
+    description: Local development server
+  - url: https://api.webplus.ai
+    description: Production server
+
+security:
+  - bearerAuth: []
+  - apiKeyAuth: []
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Models
+    description: AI model management
+  - name: Conversations
+    description: Chat conversations and messages
+  - name: Chat
+    description: Chat completion endpoints
+  - name: Files
+    description: File upload and management
+  - name: Pipelines
+    description: AI pipeline creation and execution
+  - name: System
+    description: System health and information
+
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a new user
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login user
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successfully logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current user
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Current user information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /models/available:
+    get:
+      tags: [Models]
+      summary: List available models
+      operationId: getAvailableModels
+      parameters:
+        - name: include_details
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: List of available models
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvailableModelsResponse'
+
+  /models/start:
+    post:
+      tags: [Models]
+      summary: Start a model
+      operationId: startModel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelActionRequest'
+      responses:
+        '200':
+          description: Model started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelActionResponse'
+
+  /conversations:
+    get:
+      tags: [Conversations]
+      summary: List conversations
+      operationId: listConversations
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationsListResponse'
+    
+    post:
+      tags: [Conversations]
+      summary: Create a conversation
+      operationId: createConversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationCreateRequest'
+      responses:
+        '201':
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+
+  /conversations/{id}:
+    get:
+      tags: [Conversations]
+      summary: Get conversation by ID
+      operationId: getConversationById
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Conversation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /chat/completions:
+    post:
+      tags: [Chat]
+      summary: Send chat completion request
+      operationId: createChatCompletion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatCompletionRequest'
+      responses:
+        '200':
+          description: Chat completion response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatCompletionResponse'
+            text/event-stream:
+              schema:
+                type: string
+                description: Server-sent events stream
+
+  /files/upload:
+    post:
+      tags: [Files]
+      summary: Upload a file
+      operationId: uploadFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                conversation_id:
+                  type: string
+      responses:
+        '201':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileUploadResponse'
+
+  /pipelines:
+    get:
+      tags: [Pipelines]
+      summary: List pipelines
+      operationId: listPipelines
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: List of pipelines
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pipeline'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+    
+    post:
+      tags: [Pipelines]
+      summary: Create a pipeline
+      operationId: createPipeline
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineCreateRequest'
+      responses:
+        '201':
+          description: Pipeline created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pipeline'
+
+  /pipelines/{id}/execute:
+    post:
+      tags: [Pipelines]
+      summary: Execute a pipeline
+      operationId: executePipeline
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PipelineExecutionRequest'
+      responses:
+        '202':
+          description: Pipeline execution started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PipelineExecution'
+
+  /health:
+    get:
+      tags: [System]
+      summary: Health check
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSizeParam:
+      name: page_size
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    User:
+      type: object
+      required: [id, username, email, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    UserRegistrationRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AuthTokenResponse:
+      type: object
+      required: [access_token, token_type, user]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          default: bearer
+        expires_in:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+
+    Model:
+      type: object
+      required: [id, name, status]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        size:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum: [available, running, downloading, error]
+        description:
+          type: string
+        context_length:
+          type: integer
+        capabilities:
+          type: array
+          items:
+            type: string
+
+    AvailableModelsResponse:
+      type: object
+      required: [models, cache_hit]
+      properties:
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
+        cache_hit:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+
+    ModelActionRequest:
+      type: object
+      required: [model_id]
+      properties:
+        model_id:
+          type: string
+        options:
+          type: object
+          additionalProperties: true
+
+    ModelActionResponse:
+      type: object
+      required: [success, model_id, action]
+      properties:
+        success:
+          type: boolean
+        model_id:
+          type: string
+        action:
+          type: string
+        message:
+          type: string
+
+    Conversation:
+      type: object
+      required: [id, title, model_id, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        model_id:
+          type: string
+        system_prompt:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ConversationCreateRequest:
+      type: object
+      required: [title, model_id]
+      properties:
+        title:
+          type: string
+        model_id:
+          type: string
+        system_prompt:
+          type: string
+
+    Message:
+      type: object
+      required: [id, role, content, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant, system]
+        content:
+          type: string
+        tokens:
+          type: integer
+        cost:
+          type: number
+        meta_data:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+
+    ChatCompletionRequest:
+      type: object
+      required: [model_id, prompt, conversation_id]
+      properties:
+        model_id:
+          type: string
+        prompt:
+          type: string
+        conversation_id:
+          type: string
+          format: uuid
+        stream:
+          type: boolean
+          default: false
+        options:
+          type: object
+          properties:
+            temperature:
+              type: number
+              minimum: 0
+              maximum: 2
+            max_tokens:
+              type: integer
+            top_p:
+              type: number
+
+    ChatCompletionResponse:
+      type: object
+      required: [content, usage]
+      properties:
+        content:
+          type: string
+        usage:
+          type: object
+          properties:
+            prompt_tokens:
+              type: integer
+            completion_tokens:
+              type: integer
+            total_tokens:
+              type: integer
+            costs:
+              type: object
+              properties:
+                input_cost:
+                  type: number
+                output_cost:
+                  type: number
+                total_cost:
+                  type: number
+
+    FileUploadResponse:
+      type: object
+      required: [id, filename, size]
+      properties:
+        id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        size:
+          type: integer
+        content_type:
+          type: string
+        upload_date:
+          type: string
+          format: date-time
+
+    Pipeline:
+      type: object
+      required: [id, name, description, steps]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineStep'
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    PipelineStep:
+      type: object
+      required: [id, name, type, order]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [llm_prompt, file_processor, code_executor, conditional, loop]
+        order:
+          type: integer
+        config:
+          type: object
+
+    PipelineCreateRequest:
+      type: object
+      required: [name, description]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        steps:
+          type: array
+          items:
+            type: object
+            required: [name, type, config]
+            properties:
+              name:
+                type: string
+              type:
+                type: string
+              config:
+                type: object
+
+    PipelineExecutionRequest:
+      type: object
+      properties:
+        input_data:
+          type: object
+        parameters:
+          type: object
+
+    PipelineExecution:
+      type: object
+      required: [id, pipeline_id, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        pipeline_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, running, completed, failed]
+        input_data:
+          type: object
+        output_data:
+          type: object
+        started_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+
+    ConversationsListResponse:
+      type: object
+      required: [data, success]
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            conversations:
+              type: array
+              items:
+                $ref: '#/components/schemas/Conversation'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+
+    Pagination:
+      type: object
+      required: [page, page_size, total_items, total_pages]
+      properties:
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_items:
+          type: integer
+        total_pages:
+          type: integer
+
+    HealthCheckResponse:
+      type: object
+      required: [status, timestamp]
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        services:
+          type: object
+          properties:
+            database:
+              type: boolean
+            redis:
+              type: boolean
+            ollama:
+              type: boolean
+
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

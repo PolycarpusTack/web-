@@ -1,0 +1,116 @@
+name: Performance Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  performance-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/pip
+          ~/.npm
+          apps/frontend/node_modules
+        key: ${{ runner.os }}-deps-${{ hashFiles('**/requirements.txt', '**/package-lock.json') }}
+    
+    - name: Install backend dependencies
+      run: |
+        cd apps/backend
+        python -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+    
+    - name: Install frontend dependencies
+      run: |
+        cd apps/frontend
+        npm ci
+        npx playwright install chromium
+    
+    - name: Start backend server
+      run: |
+        cd apps/backend
+        source venv/bin/activate
+        uvicorn main:app --host 0.0.0.0 --port 8000 &
+        sleep 10  # Wait for server to start
+    
+    - name: Start frontend server
+      run: |
+        cd apps/frontend
+        npm run dev -- --host &
+        sleep 10  # Wait for server to start
+    
+    - name: Run backend performance benchmarks
+      run: |
+        cd apps/backend
+        source venv/bin/activate
+        python -m performance.benchmark
+      env:
+        PERFORMANCE_MODE: ci
+    
+    - name: Run frontend performance tests
+      run: |
+        cd apps/frontend
+        npx playwright test e2e/performance/
+    
+    - name: Upload performance results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-results
+        path: |
+          apps/backend/performance_results/
+          apps/frontend/test-results/
+    
+    - name: Check performance thresholds
+      run: |
+        cd apps/backend
+        source venv/bin/activate
+        python -c "
+import json
+import sys
+from pathlib import Path
+
+# Find the latest benchmark result
+results_dir = Path('performance_results')
+if not results_dir.exists():
+    print('No performance results found')
+    sys.exit(1)
+
+latest_file = max(results_dir.glob('benchmark_*.json'), key=lambda p: p.stat().st_mtime)
+with open(latest_file) as f:
+    results = json.load(f)
+
+# Check overall score (Phase 2 target: grade B or better)
+grade = results['summary']['performance_grade']
+score = results['summary']['overall_score']
+
+print(f'Performance Grade: {grade}')
+print(f'Overall Score: {score}/100')
+
+if grade in ['F', 'D']:
+    print('❌ Performance below Phase 2 targets!')
+    sys.exit(1)
+elif grade == 'C':
+    print('⚠️  Performance is acceptable but could be improved')
+else:
+    print('✅ Performance meets Phase 2 targets!')
+"

@@ -1,0 +1,119 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: FastAPI",
+      "type": "python",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "main:app",
+        "--reload",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000"
+      ],
+      "cwd": "${workspaceFolder}/apps/backend",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/apps/backend",
+        "DATABASE_URL": "sqlite+aiosqlite:///${workspaceFolder}/apps/backend/web_plus.db"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Frontend: Vite",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/apps/frontend/src",
+      "sourceMaps": true,
+      "runtimeExecutable": "stable",
+      "preLaunchTask": "frontend:dev"
+    },
+    {
+      "name": "Backend: Tests",
+      "type": "python",
+      "request": "launch",
+      "module": "pytest",
+      "args": [
+        "-vv",
+        "-s",
+        "--tb=short",
+        "${file}"
+      ],
+      "cwd": "${workspaceFolder}/apps/backend",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/apps/backend",
+        "DATABASE_URL": "sqlite+aiosqlite:///:memory:"
+      },
+      "console": "integratedTerminal",
+      "justMyCode": false
+    },
+    {
+      "name": "Frontend: Tests",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/frontend/node_modules/vitest/dist/cli.js",
+      "args": [
+        "run",
+        "${file}"
+      ],
+      "cwd": "${workspaceFolder}/apps/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**",
+        "node_modules/**"
+      ]
+    },
+    {
+      "name": "E2E: Playwright",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/frontend/node_modules/@playwright/test/cli.js",
+      "args": [
+        "test",
+        "--headed",
+        "${file}"
+      ],
+      "cwd": "${workspaceFolder}/apps/frontend",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "name": "Full Stack: Debug",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "cwd": "${workspaceFolder}/apps/frontend",
+      "console": "integratedTerminal",
+      "serverReadyAction": {
+        "pattern": "Local:   http://localhost:([0-9]+)",
+        "uriFormat": "http://localhost:%s",
+        "action": "openExternally"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack",
+      "configurations": [
+        "Backend: FastAPI",
+        "Frontend: Vite"
+      ],
+      "stopAll": true,
+      "presentation": {
+        "hidden": false,
+        "group": "Full Stack",
+        "order": 1
+      }
+    }
+  ]
+}

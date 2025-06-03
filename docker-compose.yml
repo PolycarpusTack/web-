@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: webplus_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: webplus_user
+      POSTGRES_PASSWORD: webplus_password
+      POSTGRES_DB: webplus
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U webplus_user -d webplus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: webplus_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    container_name: webplus_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      WEBPLUS_POSTGRES_SERVER: postgres
+      WEBPLUS_POSTGRES_USER: webplus_user
+      WEBPLUS_POSTGRES_PASSWORD: webplus_password
+      WEBPLUS_POSTGRES_DB: webplus
+      WEBPLUS_REDIS_URL: redis://redis:6379/0
+      WEBPLUS_SECRET_KEY: ${WEBPLUS_SECRET_KEY:-change-me-in-production}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/backend:/app
+      - backend_uploads:/app/uploads
+    command: >
+      sh -c "
+        python scripts/init_production_db.py --seed &&
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  frontend:
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        VITE_WS_BASE_URL: ${VITE_WS_BASE_URL:-ws://localhost:8000}
+    container_name: webplus_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_uploads:

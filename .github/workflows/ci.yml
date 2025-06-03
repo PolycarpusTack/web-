@@ -1,0 +1,369 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.9'
+
+jobs:
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: webplus_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache Python dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install Python dependencies
+      working-directory: ./apps/backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Set up test environment
+      working-directory: ./apps/backend
+      run: |
+        cp .env.example .env.test
+        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/webplus_test" >> .env.test
+        echo "TESTING=true" >> .env.test
+
+    - name: Run database migrations
+      working-directory: ./apps/backend
+      run: |
+        export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/webplus_test
+        alembic upgrade head
+
+    - name: Run backend tests
+      working-directory: ./apps/backend
+      run: |
+        export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/webplus_test
+        pytest --cov=. --cov-report=xml --cov-report=term-missing -v
+
+    - name: Upload backend coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./apps/backend/coverage.xml
+        flags: backend
+        name: backend-coverage
+
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: ./apps/frontend/package-lock.json
+
+    - name: Install frontend dependencies
+      working-directory: ./apps/frontend
+      run: npm ci
+
+    - name: Run TypeScript check
+      working-directory: ./apps/frontend
+      run: npm run typecheck
+
+    - name: Run ESLint
+      working-directory: ./apps/frontend
+      run: npm run lint
+
+    - name: Run frontend tests
+      working-directory: ./apps/frontend
+      run: npm test -- --coverage --watchAll=false
+
+    - name: Upload frontend coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./apps/frontend/coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+
+    - name: Build frontend
+      working-directory: ./apps/frontend
+      run: npm run build
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Audit backend dependencies
+      working-directory: ./apps/backend
+      run: |
+        pip install safety
+        safety check --json > safety-report.json || true
+
+    - name: Audit frontend dependencies  
+      working-directory: ./apps/frontend
+      run: npm audit --audit-level moderate
+
+  code-quality:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for better analysis
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Python quality tools
+      run: |
+        pip install black isort flake8 mypy bandit
+
+    - name: Check Python code formatting (Black)
+      working-directory: ./apps/backend
+      run: black --check --diff .
+
+    - name: Check Python import sorting (isort)
+      working-directory: ./apps/backend
+      run: isort --check-only --diff .
+
+    - name: Run Python linting (flake8)
+      working-directory: ./apps/backend
+      run: flake8 .
+
+    - name: Run Python type checking (mypy)
+      working-directory: ./apps/backend
+      run: mypy . --ignore-missing-imports
+
+    - name: Run Python security linting (bandit)
+      working-directory: ./apps/backend
+      run: bandit -r . -x tests/
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: ./apps/frontend/package-lock.json
+
+    - name: Install frontend dependencies
+      working-directory: ./apps/frontend
+      run: npm ci
+
+    - name: Run Prettier check
+      working-directory: ./apps/frontend
+      run: npx prettier --check "src/**/*.{ts,tsx,js,jsx,json,css,md}"
+
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend]
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: webplus_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: ./apps/frontend/package-lock.json
+
+    - name: Install backend dependencies
+      working-directory: ./apps/backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install frontend dependencies
+      working-directory: ./apps/frontend
+      run: npm ci
+
+    - name: Set up test database
+      working-directory: ./apps/backend
+      run: |
+        export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/webplus_test
+        alembic upgrade head
+
+    - name: Start backend server
+      working-directory: ./apps/backend
+      run: |
+        export DATABASE_URL=postgresql://postgres:postgres@localhost:5432/webplus_test
+        python main.py &
+        sleep 10  # Wait for server to start
+
+    - name: Build frontend
+      working-directory: ./apps/frontend
+      run: npm run build
+
+    - name: Install Playwright
+      working-directory: ./apps/frontend
+      run: npx playwright install
+
+    - name: Run E2E tests
+      working-directory: ./apps/frontend
+      run: npx playwright test
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: e2e-test-results
+        path: ./apps/frontend/test-results/
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Install Lighthouse CI
+      run: npm install -g @lhci/cli
+
+    - name: Build frontend
+      working-directory: ./apps/frontend
+      run: |
+        npm ci
+        npm run build
+
+    - name: Run Lighthouse CI
+      working-directory: ./apps/frontend
+      run: lhci autorun
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [integration-tests, security-scan, code-quality]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add actual deployment commands here
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [integration-tests, security-scan, code-quality, performance-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Add actual deployment commands here
+
+  notify:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-frontend, security-scan, code-quality]
+    if: always()
+    
+    steps:
+    - name: Notify on failure
+      if: contains(needs.*.result, 'failure')
+      run: |
+        echo "CI pipeline failed. Check the logs for details."
+        # Add notification logic (Slack, Discord, email, etc.)
+
+    - name: Notify on success
+      if: ${{ !contains(needs.*.result, 'failure') }}
+      run: |
+        echo "CI pipeline completed successfully!"
+        # Add success notification logic
