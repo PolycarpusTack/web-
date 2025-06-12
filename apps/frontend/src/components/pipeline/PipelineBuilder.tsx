@@ -14,8 +14,6 @@ import ReactFlow, {
   Connection,
   ConnectionMode,
   OnConnect,
-  OnNodeDrag,
-  OnSelectionChange,
   MarkerType,
   Position,
 } from 'reactflow';
@@ -374,7 +372,7 @@ export const PipelineBuilder: React.FC<PipelineBuilderProps> = ({
     setSelectedEdges([]);
   }, [selectedNodes, selectedEdges, setNodes, setEdges]);
 
-  const onSelectionChange: OnSelectionChange = useCallback(({ nodes, edges }) => {
+  const onSelectionChange = useCallback(({ nodes, edges }: { nodes: Node[], edges: Edge[] }) => {
     setSelectedNodes(nodes.map(node => node.id));
     setSelectedEdges(edges.map(edge => edge.id));
   }, []);

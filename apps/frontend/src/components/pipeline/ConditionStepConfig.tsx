@@ -53,7 +53,13 @@ export const ConditionStepConfig: React.FC<ConditionStepConfigProps> = ({
   const [conditionMode, setConditionMode] = useState<'simple' | 'complex' | 'expression'>(
     config.condition_mode || 'simple'
   );
-  const [conditions, setConditions] = useState<Condition[]>(config.conditions || []);
+  const [conditions, setConditions] = useState<Condition[]>(
+    (config.conditions || []).map(c => ({
+      ...c,
+      operator: c.operator as Condition['operator'],
+      type: c.type as Condition['type']
+    }))
+  );
   const [logicalOperator, setLogicalOperator] = useState<'AND' | 'OR'>(config.logical_operator || 'AND');
   const [customExpression, setCustomExpression] = useState<string>(config.custom_expression || '');
   const [branches, setBranches] = useState<ConditionalBranch[]>(config.branches || []);
@@ -159,7 +165,7 @@ export const ConditionStepConfig: React.FC<ConditionStepConfigProps> = ({
     } catch (error) {
       setTestResult({
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   };
@@ -220,7 +226,7 @@ export const ConditionStepConfig: React.FC<ConditionStepConfigProps> = ({
       exists: 'exists',
       regex: 'matches regex'
     };
-    return operators[operator] || operator;
+    return operators[operator as keyof typeof operators] || operator;
   };
 
   return (
@@ -430,7 +436,7 @@ export const ConditionStepConfig: React.FC<ConditionStepConfigProps> = ({
               className="font-mono text-sm"
             />
             <div className="text-xs text-gray-500 mt-1">
-              Use {{field}} syntax to reference data fields. Expression should return boolean.
+              Use {'{{field}}'} syntax to reference data fields. Expression should return boolean.
             </div>
           </div>
 
@@ -492,12 +498,12 @@ export const ConditionStepConfig: React.FC<ConditionStepConfigProps> = ({
                       </div>
                       {testResult.evaluation && (
                         <div className="space-y-1">
-                          {testResult.evaluation.map((eval, index) => (
+                          {testResult.evaluation.map((evalItem: any, index: number) => (
                             <div key={index} className="text-xs">
-                              <code>{eval.condition.field}</code> {getOperatorDisplay(eval.condition.operator)} <code>{eval.condition.value}</code> 
+                              <code>{evalItem.condition.field}</code> {getOperatorDisplay(evalItem.condition.operator)} <code>{evalItem.condition.value}</code> 
                               <ArrowRight className="inline h-3 w-3 mx-1" />
-                              <Badge variant={eval.result ? "default" : "secondary"} className="text-xs">
-                                {eval.result ? 'TRUE' : 'FALSE'}
+                              <Badge variant={evalItem.result ? "default" : "secondary"} className="text-xs">
+                                {evalItem.result ? 'TRUE' : 'FALSE'}
                               </Badge>
                             </div>
                           ))}

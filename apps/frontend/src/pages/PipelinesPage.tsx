@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Clock, Copy, PencilIcon, PlayIcon, Plus, SearchIcon, Hash as Tag, Trash2 } from "lucide-react";
 import { format } from 'date-fns';
 
@@ -95,7 +94,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 const PipelinesPage = () => {
-  const navigate = useNavigate();
+  const navigate = (window as any).navigate || ((path: string) => { window.location.href = path; });
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [filteredPipelines, setFilteredPipelines] = useState<Pipeline[]>([]);
   const [searchTerm, setSearchTerm] = useState('');

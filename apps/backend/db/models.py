@@ -286,6 +286,9 @@ class Model(Base):
     max_output_tokens = Column(Integer, nullable=True)
     pricing = Column(JSON, nullable=True)  # Cost per token
     size = Column(String, nullable=True)  # Size of the model (e.g., "3.8 GB")
+    status = Column(String, default="inactive")  # Status: active, inactive, running
+    is_local = Column(Boolean, default=True)  # Whether it's a local Ollama model
+    model_metadata = Column("metadata", JSON, nullable=True)  # Additional metadata
     
     # Relationships
     tags = relationship("Tag", secondary=model_tag_association, back_populates="models")

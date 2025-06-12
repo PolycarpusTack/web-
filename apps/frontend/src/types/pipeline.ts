@@ -153,6 +153,7 @@ export interface LLMStepConfig {
   presence_penalty?: number;
   system_prompt?: string;
   response_format?: 'text' | 'json';
+  stream?: boolean;
 }
 
 export interface CodeStepConfig {

@@ -123,6 +123,8 @@ export interface ReorderPipelineStepsRequest {
 
 export interface ExecutePipelineRequest {
   input_parameters?: Record<string, unknown>;
+  dry_run?: boolean;
+  debug_mode?: boolean;
 }
 
 /**

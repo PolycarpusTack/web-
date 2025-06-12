@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ import { PipelineDefinition, ValidationResult, ExecutionStatus } from '@/types/p
 
 export const PipelineBuilderPageNew: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const navigate = (window as any).navigate || ((path: string) => { window.location.href = path; });
   
   // Pipeline state
   const [pipeline, setPipeline] = useState<PipelineDefinition>({

@@ -10,7 +10,7 @@ load_dotenv()
 
 # Get database URL from environment or use default SQLite database
 db_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web_plus.db")
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_file}")
+DATABASE_URL = os.getenv("WEBPLUS_DATABASE_URL", f"sqlite+aiosqlite:///{db_file}")
 
 # Create async engine for modern SQLAlchemy style
 engine = create_async_engine(

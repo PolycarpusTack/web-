@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { AlertCircle, Check as CheckCircle, ChevronLeft, Clock, Copy, Download, LogOut, Pause, PlayIcon, RefreshCw, X } from "lucide-react";
 
 import { Button } from '@/components/ui/button';
@@ -241,7 +241,7 @@ const JsonViewer = ({ data, title }: { data: any, title?: string }) => {
 // Pipeline Execution Page Component
 const PipelineExecutionPage = () => {
   const { id, executionId } = useParams<{ id: string, executionId?: string }>();
-  const navigate = useNavigate();
+  const navigate = (window as any).navigate || ((path: string) => { window.location.href = path; });
   
   const [pipeline, setPipeline] = useState<Pipeline | null>(null);
   const [execution, setExecution] = useState<PipelineExecution | null>(null);

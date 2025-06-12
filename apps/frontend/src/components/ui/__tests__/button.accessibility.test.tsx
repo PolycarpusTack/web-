@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { Button } from '../button';
 import { testAccessibility, testAriaAttributes } from '@/test-utils/accessibility';
 
@@ -19,7 +20,7 @@ describe('Button Accessibility', () => {
   });
 
   it('should be keyboard accessible', async () => {
-    const handleClick = jest.fn();
+    const handleClick = vi.fn();
     render(<Button onClick={handleClick}>Click me</Button>);
     
     const button = screen.getByRole('button', { name: /click me/i });

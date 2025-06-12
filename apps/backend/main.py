@@ -73,23 +73,7 @@ from api.pipeline_execution import router as pipeline_execution_router
 from api.help_system import router as help_system_router
 
 # --- Configuration ---
-from pydantic_settings import BaseSettings
-
-class Settings(BaseSettings):
-    ollama_url: str = "http://localhost:11434"
-    api_keys: List[str] = ["SECRET_KEY"]
-    cors_origins: List[str] = ["http://localhost:3000"]
-    rate_limit: str = "10/minute"
-    enable_metrics: bool = True
-    cache_ttl: int = 300  # 5 minutes
-    api_base_url: str = "http://localhost:8000"
-    upload_dir: str = "./uploads"
-
-    class Config:
-        env_file = ".env"
-        env_prefix = "EMMP_"
-
-settings = Settings()
+from core.config import settings
 
 # --- Advanced Logging Setup ---
 logging.config.dictConfig({
@@ -225,10 +209,9 @@ app = FastAPI(
 )
 
 # Add CORS middleware with environment-based configuration
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,  # Production-ready CORS configuration
+    allow_origins=settings.cors_origins,  # Use settings from config
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "X-API-Key", "Authorization"],
     allow_credentials=True,
@@ -255,7 +238,7 @@ compliance_config = PRODUCTION_CONFIG if os.getenv("ENVIRONMENT", "development")
 app.add_middleware(ComplianceMiddleware, config=compliance_config)
 
 # --- Caching ---
-model_cache = TTLCache(maxsize=100, ttl=settings.cache_ttl)
+model_cache = TTLCache(maxsize=100, ttl=300)  # 5 minutes TTL
 
 # --- Pydantic Models ---
 class ModelInfo(BaseModel):
@@ -371,7 +354,7 @@ async def get_ollama_models(
                     size=model_size,
                     status="available",  # From Ollama
                     running=False,  # We'll determine this later
-                    metadata={"digest": model_data.get("digest"), **db_model.metadata} if db_model.metadata else {"digest": model_data.get("digest")}
+                    metadata={"digest": model_data.get("digest"), **db_model.model_metadata} if db_model.model_metadata else {"digest": model_data.get("digest")}
                 )
             else:
                 # Model not in database, create a basic entry
@@ -393,7 +376,7 @@ async def get_ollama_models(
                     "is_active": True,
                     "status": "inactive",
                     "description": f"Ollama model {model_id}",
-                    "metadata": {"digest": model_data.get("digest")},
+                    "model_metadata": {"digest": model_data.get("digest")},
                     "context_window": 4096  # Default
                 })
             
@@ -407,7 +390,7 @@ async def get_ollama_models(
                 size=model.size,
                 status=model.status,
                 running=model.status == "running",
-                metadata=model.metadata or {}
+                metadata=model.model_metadata or {}
             )
             ollama_models.append(model_info)
         
@@ -435,7 +418,7 @@ async def get_ollama_models(
                     size=model.size,
                     status="unknown" if model.is_local else model.status,
                     running=False if model.is_local else model.status == "running",
-                    metadata=model.metadata or {}
+                    metadata=model.model_metadata or {}
                 ) for model in db_models
             ]
         
@@ -454,7 +437,7 @@ async def get_ollama_models(
                     size=model.size,
                     status="unknown" if model.is_local else model.status,
                     running=False if model.is_local else model.status == "running",
-                    metadata=model.metadata or {}
+                    metadata=model.model_metadata or {}
                 ) for model in db_models
             ]
         

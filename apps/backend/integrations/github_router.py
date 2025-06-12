@@ -16,7 +16,7 @@ from auth.jwt import get_current_active_user
 from db.models import User
 from db import crud
 from integrations.github import GitHubIntegration, GitHubConfig, GitHubCommit
-from utils.encryption import encrypt_credentials, decrypt_credentials
+from utils.encryption import encrypt_provider_credentials as encrypt_credentials, decrypt_provider_credentials as decrypt_credentials
 
 logger = logging.getLogger(__name__)
 

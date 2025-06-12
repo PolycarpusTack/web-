@@ -79,15 +79,6 @@ export function PipelineGitHubSync({
           toast({
             title: "Pull request created",
             description: `PR #${data.pull_request.number} created successfully`,
-            action: (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(data.pull_request.url, '_blank')}
-              >
-                View PR
-              </Button>
-            )
           });
         } else {
           toast({

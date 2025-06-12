@@ -74,7 +74,7 @@ export function AccessibilityChecker({ enabled = false }: AccessibilityCheckerPr
       case 'serious':
         return 'destructive';
       case 'moderate':
-        return 'warning';
+        return 'default';
       case 'minor':
         return 'secondary';
       default:

@@ -303,7 +303,12 @@ export default function ProvidersPage() {
         // Clear the credentials form
         setCredentials(prev => ({
           ...prev,
-          [providerType]: {}
+          [providerType]: {
+            api_key: '',
+            organization_id: '',
+            project_id: '',
+            endpoint: ''
+          } as ProviderCredentials
         }));
         
         setCredentialsDialogOpen(false);

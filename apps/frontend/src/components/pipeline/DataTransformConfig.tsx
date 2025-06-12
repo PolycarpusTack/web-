@@ -56,7 +56,13 @@ export const DataTransformConfig: React.FC<DataTransformConfigProps> = ({
 }) => {
   const [transformType, setTransformType] = useState<string>(config.type || 'extract');
   const [mappings, setMappings] = useState<TransformMapping[]>(config.mappings || []);
-  const [filterConditions, setFilterConditions] = useState<FilterCondition[]>(config.filter_conditions || []);
+  const [filterConditions, setFilterConditions] = useState<FilterCondition[]>(
+    (config.filter_conditions || []).map(c => ({
+      ...c,
+      operator: c.operator as FilterCondition['operator'],
+      type: c.type as FilterCondition['type']
+    }))
+  );
   const [sourcePath, setSourcePath] = useState<string>(config.source_path || '');
   const [targetKey, setTargetKey] = useState<string>(config.target_key || 'result');
   const [customExpression, setCustomExpression] = useState<string>(config.custom_expression || '');
@@ -135,7 +141,7 @@ export const DataTransformConfig: React.FC<DataTransformConfigProps> = ({
   // Generate preview
   const generatePreview = () => {
     try {
-      let result = sampleData;
+      let result: any = sampleData;
       
       // Apply source path
       if (sourcePath) {
@@ -233,7 +239,7 @@ export const DataTransformConfig: React.FC<DataTransformConfigProps> = ({
 
       setPreviewData(result);
     } catch (error) {
-      setPreviewData({ error: 'Preview generation failed', details: error.message });
+      setPreviewData({ error: 'Preview generation failed', details: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -473,7 +479,7 @@ export const DataTransformConfig: React.FC<DataTransformConfigProps> = ({
               className="font-mono text-sm"
             />
             <div className="text-xs text-gray-500 mt-1">
-              Use {{field}} syntax to insert field values
+              Use {'{{field}}'} syntax to insert field values
             </div>
           </div>
         </TabsContent>

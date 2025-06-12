@@ -102,7 +102,7 @@ export default function DevPerformancePage() {
               </div>
               <div className="text-right">
                 <p className={cn("text-lg font-bold", getStatusColor(true))}>
-                  <200ms
+                  &lt;200ms
                 </p>
                 <Badge variant="outline" className="text-xs">Target: 200ms</Badge>
               </div>
@@ -141,7 +141,7 @@ export default function DevPerformancePage() {
               </div>
               <div className="text-right">
                 <p className={cn("text-lg font-bold", getStatusColor(true))}>
-                  <2MB
+                  &lt;2MB
                 </p>
                 <Badge variant="outline" className="text-xs">Target: 2MB</Badge>
               </div>
